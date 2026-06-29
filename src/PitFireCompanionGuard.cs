@@ -6,6 +6,7 @@ namespace BossSpawnControl
 {
     /// <summary>
     /// Optional soft dependency on pitFireTeam (SPT-PitFireTeam) and PitFireTeamFikaFix CompanionGuard API.
+    /// pitFireTeam 0.8.x: IsFollower(BotOwner, AIBossPlayer) — AIBossPlayer is EFT global type, not pitTeam.Components.
     /// </summary>
     internal static class PitFireCompanionGuard
     {
@@ -15,6 +16,7 @@ namespace BossSpawnControl
         private static MethodInfo _fikaFixIsProtectedProfileId;
         private static MethodInfo _pitFireIsFollowerBot;
         private static MethodInfo _pitFireIsFollowerProfileId;
+        private static MethodInfo _pitFireGetFollowerByProfileId;
 
         internal static bool IsAvailable
         {
@@ -23,6 +25,15 @@ namespace BossSpawnControl
                 EnsureInitialized();
                 return _fikaFixAvailable || _pitFireIsFollowerBot != null;
             }
+        }
+
+        internal static string DescribeProbe()
+        {
+            EnsureInitialized();
+            return
+                $"fikaFix={_fikaFixAvailable} BossPlayers={_pitFireIsFollowerBot != null} " +
+                $"IsFollowerProfileId={_pitFireIsFollowerProfileId != null} " +
+                $"AIBossPlayer={typeof(AIBossPlayer).FullName}";
         }
 
         internal static bool IsProtectedBot(BotOwner bot)
@@ -34,14 +45,14 @@ namespace BossSpawnControl
 
             EnsureInitialized();
 
-            if (_fikaFixAvailable && TryInvokeBool(_fikaFixIsProtectedBot, bot, out var fikaFixResult))
+            if (_fikaFixAvailable && TryInvokeBool(_fikaFixIsProtectedBot, bot, out var fikaFixResult) && fikaFixResult)
             {
-                return fikaFixResult;
+                return true;
             }
 
-            if (TryInvokeBool(_pitFireIsFollowerBot, bot, null, out var pitFireResult))
+            if (TryInvokeIsFollower(bot))
             {
-                return pitFireResult;
+                return true;
             }
 
             return IsProtectedProfileId(bot.ProfileId);
@@ -56,12 +67,17 @@ namespace BossSpawnControl
 
             EnsureInitialized();
 
-            if (_fikaFixAvailable && TryInvokeBool(_fikaFixIsProtectedProfileId, profileId, out var fikaFixResult))
+            if (_fikaFixAvailable && TryInvokeBool(_fikaFixIsProtectedProfileId, profileId, out var fikaFixResult) && fikaFixResult)
             {
-                return fikaFixResult;
+                return true;
             }
 
-            return TryInvokeBool(_pitFireIsFollowerProfileId, profileId, out var pitFireResult) && pitFireResult;
+            if (TryInvokeBool(_pitFireIsFollowerProfileId, profileId, out var pitFireResult) && pitFireResult)
+            {
+                return true;
+            }
+
+            return TryGetFollowerRecord(profileId);
         }
 
         private static void EnsureInitialized()
@@ -85,10 +101,90 @@ namespace BossSpawnControl
             if (bossPlayersType != null)
             {
                 _pitFireIsFollowerProfileId = AccessTools.Method(bossPlayersType, "IsFollowerProfileId", new[] { typeof(string) });
+                _pitFireGetFollowerByProfileId = AccessTools.Method(bossPlayersType, "GetFollowerByProfileId", new[] { typeof(string) });
                 _pitFireIsFollowerBot = AccessTools.Method(
                     bossPlayersType,
                     "IsFollower",
-                    new[] { typeof(BotOwner), AccessTools.TypeByName("pitTeam.Components.AIBossPlayer") });
+                    new[] { typeof(BotOwner), typeof(AIBossPlayer) });
+            }
+        }
+
+        private static bool TryInvokeIsFollower(BotOwner bot)
+        {
+            if (_pitFireIsFollowerBot == null)
+            {
+                return IsFollowerByBotFollowerState(bot);
+            }
+
+            try
+            {
+                var result = (bool)_pitFireIsFollowerBot.Invoke(null, new object[] { bot, null });
+                if (result)
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                // fall through
+            }
+
+            return IsFollowerByBotFollowerState(bot);
+        }
+
+        private static bool IsFollowerByBotFollowerState(BotOwner bot)
+        {
+            if (bot?.BotFollower?.HaveBoss != true)
+            {
+                return false;
+            }
+
+            var bossToFollow = bot.BotFollower.BossToFollow;
+            if (bossToFollow == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                var playerMethod = bossToFollow.GetType().GetMethod("Player", BindingFlags.Instance | BindingFlags.Public);
+                var player = playerMethod?.Invoke(bossToFollow, null) as Player;
+                if (player == null)
+                {
+                    return false;
+                }
+
+                return TryInvokePlayerBoss(player.ProfileId);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryInvokePlayerBoss(string profileId)
+        {
+            var bossPlayersType = AccessTools.TypeByName("pitTeam.Modules.BossPlayers");
+            var isPlayerBoss = bossPlayersType != null
+                ? AccessTools.Method(bossPlayersType, "IsPlayerBoss", new[] { typeof(string) })
+                : null;
+            return isPlayerBoss != null && TryInvokeBool(isPlayerBoss, profileId, out var isBoss) && isBoss;
+        }
+
+        private static bool TryGetFollowerRecord(string profileId)
+        {
+            if (_pitFireGetFollowerByProfileId == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                return _pitFireGetFollowerByProfileId.Invoke(null, new object[] { profileId }) != null;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -103,25 +199,6 @@ namespace BossSpawnControl
             try
             {
                 result = (bool)method.Invoke(null, new[] { arg1 });
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static bool TryInvokeBool(MethodInfo method, object arg1, object arg2, out bool result)
-        {
-            result = false;
-            if (method == null || arg1 == null)
-            {
-                return false;
-            }
-
-            try
-            {
-                result = (bool)method.Invoke(null, new object[] { arg1, arg2 });
                 return true;
             }
             catch

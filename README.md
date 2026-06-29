@@ -1,7 +1,8 @@
 # Boss Spawn Control
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/release-v1.5.3-blue)](https://github.com/kabzon93region/BossSpawnControl/releases/tag/v1.5.3)
+[![Release](https://img.shields.io/badge/release-v1.5.4-blue)](https://github.com/kabzon93region/BossSpawnControl/releases/tag/v1.5.4)
+[![Download zip](https://img.shields.io/badge/download-zip-brightgreen)](https://github.com/kabzon93region/BossSpawnControl/releases/tag/v1.5.4)
 [![EFT](https://img.shields.io/badge/EFT-16%2E9-orange)](https://www.escapefromtarkov.com/)
 [![SPT](https://img.shields.io/badge/SPT-4.0.13-blue)](https://sp-tarkov.com/)
 [![Fika](https://img.shields.io/badge/Fika-2%2E3%2Ex-purple)](https://github.com/project-fika/Fika-Plugin)
@@ -13,20 +14,17 @@
 | | |
 |---|---|
 | **Разработчик** | [kabzon93region](https://github.com/kabzon93region) |
-| **Версия** | 1.5.3 |
+| **Версия** | 1.5.4 |
 | **GitHub** | [BossSpawnControl](https://github.com/kabzon93region/BossSpawnControl) |
 | **Deployment** | `(singleplayer,headless_host,host_client)` |
 | **Тип** | client |
 
-## Статус v1.5.3 (подтверждено тестами)
+## Статус v1.5.4
 
 | Функция | Статус |
 |---------|--------|
-| Спавн ботов по ролям (F12 → Боты) | ✅ |
-| Поддержание населения (лимиты по фракциям + общий cap) | ✅ |
-| Сброс AI-ботов с карты | ✅ (почти все; боссы не затрагиваются) |
-| Спавн/форс боссов | ✅ (отдельная секция «Боссы») |
-
+| Спавн / поддержание / сброс AI-ботов | ✅ v1.5.3+ |
+| Защита Pit Fire Team при сбросе | ✅ v1.5.4 + PitFireTeamFikaFix v0.2.3 |
 **Где работает:** ПК **хоста рейда** — listen-host (основной сценарий), headless или одиночный SPT.
 
 ## Куда ставить
@@ -37,7 +35,6 @@
 | Fika **listen-host** (рейд на ПК того, кто создал игру) | **ПК хоста** — основной сценарий |
 | Fika **headless** (отдельная машина-хост) | headless PC |
 | Fika client (подключился к чужому рейду) | опционально для F12, **без** спавна/сброса ботов |
-
 Спавн, поддержание населения и «Удалить всех ботов» работают только там, где Fika даёт authority хоста (`IsServer` / `EClientType.Host`).
 
 ## F12 — секции
@@ -73,8 +70,9 @@
 - Сброс ботов **не удаляет боссов** (boss/follower roles из волн карты).
 - Fallback `BotSpawner.method_2` может не сработать для всех боссов без boss-волны на карте.
 - Конфликт с ABPS progressive boss — наш патч с priority 0 идёт **после** ABPS.
-- **Pit Fire Team:** защита компаньонов при сбросе зависит от API `pitTeam.Modules.BossPlayers` — может не сработать для всех последователей (см. CHANGELOG).
+- **Pit Fire Team:** `ProtectPitFireCompanions` (вкл. по умолчанию) + **PitFireTeamFikaFix v0.2.3+** на хосте.
 
 ## Поддержать проект
 
+Разовый донат картой РФ, СБП, ЮMoney, VK Pay:
 **[DonationAlerts → kabzon93region](https://www.donationalerts.com/r/kabzon93region)**

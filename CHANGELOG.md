@@ -1,5 +1,13 @@
 # Changelog — Boss Spawn Control
 
+## 1.5.4 (2026-06-29)
+
+**Подтверждено в тесте:** сброс удаляет обычных AI-ботов, но оставляет боссов и последователей Pit Fire Team.
+
+- **Fix Pit Fire Team companion guard:** `BossPlayers.IsFollower(BotOwner, AIBossPlayer)` — второй параметр это **EFT `AIBossPlayer`**, не `pitTeam.Components.AIBossPlayer` (из‑за этого `IsFollower` не находился и `protectedCompanions=0`).
+- Fallback: `IsFollowerProfileId`, `GetFollowerByProfileId`, `BotFollower.HaveBoss` + player boss.
+- Лог сброса: `probe=` с результатом reflection.
+
 ## 1.5.3 (2026-06-29) — **stable (population)**
 
 **Подтверждено в тестах (listen-host / Fika):** спавн по ролям, поддержание лимитов по фракциям и общий cap, сброс AI-ботов с карты работают стабильно. Боссы при сбросе **не удаляются** (ожидаемо — кнопка «Удалить всех ботов» рассчитана на обычных ботов, не на boss-волны).
@@ -11,7 +19,7 @@
 
 ### Известное ограничение (v1.5.3)
 
-- **Pit Fire Team:** опция `ProtectPitFireCompanions` (по умолчанию вкл.) может не сработать для последователей отряда — см. расследование в следующих версиях.
+- ~~**Pit Fire Team:** опция `ProtectPitFireCompanions`…~~ → исправлено в **v1.5.4** (нужен также PitFireTeamFikaFix v0.2.3+).
 
 ## 1.5.2 (2026-06-29)
 

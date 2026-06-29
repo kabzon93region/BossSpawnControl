@@ -74,7 +74,8 @@ namespace BossSpawnControl
             var protectCompanions = cfg.ProtectPitFireCompanions.Value;
             var skipBtr = cfg.ProtectBtrDuringClear.Value;
             log.AppendLine(
-                $"  ProtectPitFireCompanions={protectCompanions} ProtectBtr={skipBtr} pitFireDetected={PitFireCompanionGuard.IsAvailable}");
+                $"  ProtectPitFireCompanions={protectCompanions} ProtectBtr={skipBtr} " +
+                $"pitFireDetected={PitFireCompanionGuard.IsAvailable} probe={PitFireCompanionGuard.DescribeProbe()}");
 
             var snapshotBefore = BotPopulationCounter.Collect(plugin, "before clear");
             log.AppendLine($"  Before clear: activeBots={snapshotBefore.TotalActiveBots}");

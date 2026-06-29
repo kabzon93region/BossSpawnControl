@@ -4,6 +4,6 @@ namespace BossSpawnControl
     {
         public const string GUID = "com.dematch.bossspawncontrol";
         public const string NAME = "Boss Spawn Control";
-        public const string VERSION = "1.5.3";
+        public const string VERSION = "1.5.4";
     }
 }
