@@ -1,20 +1,25 @@
 using System;
 using System.Reflection;
+using BepInEx.Bootstrap;
 using Comfort.Common;
 using EFT;
 
 namespace BossSpawnControl
 {
     /// <summary>
-    /// Bot spawn/removal authority: headless host in Fika coop, local game otherwise.
-    /// Uses reflection so BossSpawnControl does not require a Fika.Core reference.
+    /// Bot spawn/removal authority: Fika raid host (listen-host on player PC or dedicated headless),
+    /// singleplayer/local otherwise. Joining clients (EClientType.Client) have no authority.
     /// </summary>
     internal static class BotSpawnAuthority
     {
+        private const string FikaHeadlessGuid = "com.fika.headless";
+
         private static bool _fikaProbeDone;
         private static bool _fikaAvailable;
         private static PropertyInfo _isServerProp;
         private static PropertyInfo _isClientProp;
+        private static PropertyInfo _isHeadlessProp;
+        private static PropertyInfo _isHeadlessGameProp;
 
         internal static bool HasBotRemovalAuthority(out string reason)
         {
@@ -22,11 +27,27 @@ namespace BossSpawnControl
 
             if (!Singleton<GameWorld>.Instantiated || !Singleton<IBotGame>.Instantiated)
             {
-                reason = "not in raid (GameWorld/IBotGame unavailable)";
+                reason = "не в рейде (GameWorld/IBotGame недоступен)";
                 return false;
             }
 
             if (!TryProbeFika())
+            {
+                return true;
+            }
+
+            if (Chainloader.PluginInfos.ContainsKey(FikaHeadlessGuid))
+            {
+                return true;
+            }
+
+            if (GetFikaBool(_isHeadlessProp) || GetFikaBool(_isHeadlessGameProp))
+            {
+                return true;
+            }
+
+            // Fika 2.3: IsServer == (ClientType == Host) — listen-host on player PC and Fika host in general.
+            if (GetFikaBool(_isServerProp))
             {
                 return true;
             }
@@ -36,12 +57,7 @@ namespace BossSpawnControl
                 return true;
             }
 
-            if (GetFikaBool(_isServerProp))
-            {
-                return true;
-            }
-
-            reason = "Fika client — bot removal only on headless host / listen host (IsServer)";
+            reason = "Fika client (подключившийся игрок) — спавн/сброс только на ПК хоста рейда (IsServer/Host)";
             return false;
         }
 
@@ -49,10 +65,37 @@ namespace BossSpawnControl
         {
             if (!TryProbeFika())
             {
-                return "singleplayer/local (no Fika)";
+                return "singleplayer/local (без Fika)";
             }
 
-            return $"fika isServer={GetFikaBool(_isServerProp)} isClient={GetFikaBool(_isClientProp)}";
+            if (Chainloader.PluginInfos.ContainsKey(FikaHeadlessGuid))
+            {
+                return "fika-headless plugin (authority хоста)";
+            }
+
+            var isServer = GetFikaBool(_isServerProp);
+            var isClient = GetFikaBool(_isClientProp);
+            var isHeadless = GetFikaBool(_isHeadlessProp);
+            var isHeadlessGame = GetFikaBool(_isHeadlessGameProp);
+
+            if (isServer)
+            {
+                return isHeadless || isHeadlessGame
+                    ? "fika host (headless, IsServer)"
+                    : "fika host (listen-host на ПК игрока, IsServer)";
+            }
+
+            if (isHeadless || isHeadlessGame)
+            {
+                return "fika headless (IsHeadless/IsHeadlessGame)";
+            }
+
+            if (!isClient)
+            {
+                return "fika host (не Client — authority есть)";
+            }
+
+            return "fika client (подключившийся игрок — без authority)";
         }
 
         private static bool TryProbeFika()
@@ -73,8 +116,11 @@ namespace BossSpawnControl
                     return false;
                 }
 
-                _isServerProp = fikaType.GetProperty("IsServer", BindingFlags.Static | BindingFlags.Public);
-                _isClientProp = fikaType.GetProperty("IsClient", BindingFlags.Static | BindingFlags.Public);
+                const BindingFlags flags = BindingFlags.Static | BindingFlags.Public;
+                _isServerProp = fikaType.GetProperty("IsServer", flags);
+                _isClientProp = fikaType.GetProperty("IsClient", flags);
+                _isHeadlessProp = fikaType.GetProperty("IsHeadless", flags);
+                _isHeadlessGameProp = fikaType.GetProperty("IsHeadlessGame", flags);
                 _fikaAvailable = _isServerProp != null && _isClientProp != null;
                 return _fikaAvailable;
             }

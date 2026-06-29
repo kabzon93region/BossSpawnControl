@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,8 +16,7 @@ namespace BossSpawnControl
         internal static async Task<int> SpawnDeficitsAsync(
             PluginCore plugin,
             BotSpawner spawner,
-            BotZone zone,
-            System.Collections.Generic.List<(BotFactionCategory Faction, int Deficit)> deficits,
+            List<(BotFactionCategory Faction, int Deficit)> deficits,
             StringBuilder log)
         {
             var cfg = plugin.PopulationConfig;
@@ -43,7 +43,15 @@ namespace BossSpawnControl
 
                 for (var i = 0; i < toSpawn; i++)
                 {
-                    var ok = await TrySpawnForFactionAsync(plugin, spawner, zone, faction, difficulty, log, i + 1, toSpawn);
+                    var zone = PickSpawnZone(spawner, faction, log);
+                    if (zone == null)
+                    {
+                        log.AppendLine($"  SPAWN ABORT {faction.GetDisplayName()}: no BotZone.");
+                        break;
+                    }
+
+                    var ok = await TrySpawnForFactionAsync(
+                        plugin, spawner, zone, faction, difficulty, log, i + 1, toSpawn);
                     if (ok)
                     {
                         spawnedTotal++;
@@ -54,8 +62,30 @@ namespace BossSpawnControl
             return spawnedTotal;
         }
 
-        internal static BotZone PickSpawnZone(BotSpawner spawner, StringBuilder log)
+        internal static BotZone PickSpawnZone(BotSpawner spawner, BotFactionCategory faction, StringBuilder log)
         {
+            if (spawner == null)
+            {
+                log.AppendLine("  AllBotZones empty (spawner null).");
+                return null;
+            }
+
+            if (faction == BotFactionCategory.Usec
+                || faction == BotFactionCategory.Bear
+                || faction == BotFactionCategory.Rogues)
+            {
+                var pmcZones = spawner.GetPmcZones();
+                if (pmcZones != null && pmcZones.Count > 0)
+                {
+                    var index = UnityEngine.Random.Range(0, pmcZones.Count);
+                    var zone = pmcZones[index];
+                    log.AppendLine($"  Picked PMC zone [{index}/{pmcZones.Count}]: {zone.name}");
+                    return zone;
+                }
+
+                log.AppendLine("  WARN: GetPmcZones empty — fallback to random AllBotZones.");
+            }
+
             var zones = spawner.AllBotZones;
             if (zones == null || zones.Length == 0)
             {
@@ -63,10 +93,10 @@ namespace BossSpawnControl
                 return null;
             }
 
-            var index = UnityEngine.Random.Range(0, zones.Length);
-            var zone = zones[index];
-            log.AppendLine($"  Picked zone [{index}/{zones.Length}]: {zone.name}");
-            return zone;
+            var randomIndex = UnityEngine.Random.Range(0, zones.Length);
+            var picked = zones[randomIndex];
+            log.AppendLine($"  Picked zone [{randomIndex}/{zones.Length}]: {picked.name}");
+            return picked;
         }
 
         private static async Task<bool> TrySpawnForFactionAsync(
@@ -84,17 +114,20 @@ namespace BossSpawnControl
                 return false;
             }
 
+            var path = spawnType.IsBossOrFollower() ? "method_2/boss" : "method_2/wave";
             log.AppendLine(
                 $"  SPAWN ATTEMPT {attemptIndex}/{attemptTotal} faction={faction.GetDisplayName()} " +
-                $"role={spawnType} side={side} diff={difficulty} forced=true");
+                $"role={spawnType} side={side} diff={difficulty} path={path} forced=false");
 
             BotSpawnerDiagnostics.AppendZoneState(log, zone);
             BotSpawnerDiagnostics.AppendSpawnerState(log, spawner);
 
             try
             {
-                await spawner.method_2(side, zone, spawnType, difficulty, forcedSpawn: true);
-                log.AppendLine($"  SPAWN OK {label} via method_2 completed.");
+                // Game-native spawn: PMC boss-flagged roles go through BossSpawner (Savage profile + wave.Time).
+                // forcedSpawn=false → IgnoreMaxBots=false so maintenance cap is respected.
+                await spawner.method_2(side, zone, spawnType, difficulty, forcedSpawn: false);
+                log.AppendLine($"  SPAWN OK {label} via method_2(forced=false).");
                 return true;
             }
             catch (Exception ex)
@@ -119,7 +152,8 @@ namespace BossSpawnControl
             switch (faction)
             {
                 case BotFactionCategory.Rogues:
-                    side = EPlayerSide.Usec;
+                    // Wave loader expects Savage for backend bot waves (same as BossSpawner.Create).
+                    side = EPlayerSide.Savage;
                     spawnType = WildSpawnType.exUsec;
                     label = "exUsec rogue";
                     return true;
@@ -137,13 +171,13 @@ namespace BossSpawnControl
                     return true;
 
                 case BotFactionCategory.Usec:
-                    side = EPlayerSide.Usec;
+                    side = EPlayerSide.Savage;
                     spawnType = WildSpawnType.pmcUSEC;
                     label = "pmcUSEC";
                     return true;
 
                 case BotFactionCategory.Bear:
-                    side = EPlayerSide.Bear;
+                    side = EPlayerSide.Savage;
                     spawnType = WildSpawnType.pmcBEAR;
                     label = "pmcBEAR";
                     return true;

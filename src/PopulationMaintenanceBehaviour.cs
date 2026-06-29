@@ -96,6 +96,8 @@ namespace BossSpawnControl
 
                 _timer = 0f;
 
+                PopulationSpawnerLimitSync.RestoreIfSaved();
+
                 plugin.Log("[POPULATION] Maintenance mode STOPPED from config.", true);
 
             }

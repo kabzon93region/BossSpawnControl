@@ -179,6 +179,9 @@ namespace BossSpawnControl
                     case BotRemovalMethod.Kill:
                         Kill++;
                         break;
+                    case BotRemovalMethod.BotDespawn:
+                        RemoveFromMap++;
+                        break;
                     case BotRemovalMethod.LeaveQueued:
                         LeaveQueued++;
                         break;

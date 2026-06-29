@@ -7,9 +7,9 @@
     <LangVersion>latest</LangVersion>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <Version>1.5.0</Version>
-    <AssemblyVersion>1.5.0.0</AssemblyVersion>
-    <FileVersion>1.5.0.0</FileVersion>
+    <Version>1.5.3</Version>
+    <AssemblyVersion>1.5.3.0</AssemblyVersion>
+    <FileVersion>1.5.3.0</FileVersion>
     <Product>Boss Spawn Control</Product>
     <Description>Force spawn / disable bosses on SPT 4 + Fika (F12 + debug button)</Description>
     <DebugType>none</DebugType>
@@ -92,6 +92,8 @@
     <Compile Include="src\PitFireCompanionGuard.cs" />
     <Compile Include="src\PopulationMaintenanceDeficits.cs" />
     <Compile Include="src\PopulationMaintenanceSpawner.cs" />
+    <Compile Include="src\PopulationExcessTrimmer.cs" />
+    <Compile Include="src\PopulationSpawnerLimitSync.cs" />
     <Compile Include="src\Patches\BossSpawnScenarioPatch.cs" />
   </ItemGroup>
 

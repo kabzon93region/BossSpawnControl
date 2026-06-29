@@ -78,7 +78,35 @@ namespace BossSpawnControl
 
         }
 
+        internal int GetPendingSpawnCount()
 
+        {
+
+            var inFlight = SpawnerInSpawnProcess + SpawnerQueueWaitCount;
+
+            // BotsLoading leaks when profile generation throws (failed PMC/exUsec via BotCreationDataClass).
+
+            var saneLoadingCap = Math.Max(0, TotalActiveBots + inFlight + 2);
+
+            if (SpawnerBotsLoading > 0 && SpawnerBotsLoading <= saneLoadingCap)
+
+            {
+
+                inFlight += SpawnerBotsLoading;
+
+            }
+
+            return inFlight;
+
+        }
+
+        internal int GetEffectiveTotal()
+
+        {
+
+            return TotalActiveBots + GetPendingSpawnCount();
+
+        }
 
         internal string FormatSummary()
 
@@ -86,7 +114,9 @@ namespace BossSpawnControl
 
             var sb = new StringBuilder();
 
-            sb.AppendLine($"  InRaid={InRaid} activeBots={TotalActiveBots} ignoredInactive={IgnoredInactiveBots}");
+            sb.AppendLine(
+                $"  InRaid={InRaid} activeBots={TotalActiveBots} effectiveTotal={GetEffectiveTotal()} " +
+                $"pending={GetPendingSpawnCount()} rawBotsLoading={SpawnerBotsLoading} ignoredInactive={IgnoredInactiveBots}");
 
             sb.AppendLine(
 

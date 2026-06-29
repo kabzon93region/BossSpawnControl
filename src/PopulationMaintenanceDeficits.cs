@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Comfort.Common;
-using EFT;
 
 namespace BossSpawnControl
 {
@@ -18,16 +16,19 @@ namespace BossSpawnControl
             var result = new List<(BotFactionCategory, int)>();
 
             var totalLimit = cfg.LimitTotal.Value;
-            var currentTotal = snapshot.TotalActiveBots;
-            var globalRoom = totalLimit > 0 ? Math.Max(0, totalLimit - currentTotal) : int.MaxValue;
+            var currentActive = snapshot.TotalActiveBots;
+            var pending = snapshot.GetPendingSpawnCount();
+            var effectiveTotal = snapshot.GetEffectiveTotal();
+            var globalRoom = totalLimit > 0 ? Math.Max(0, totalLimit - effectiveTotal) : int.MaxValue;
 
             log.AppendLine(
-                $"  Limits: configuredTotal={totalLimit} currentActive={currentTotal} globalRoom={FormatRoom(globalRoom)}");
+                $"  Limits: configuredTotal={totalLimit} active={currentActive} pending={pending} " +
+                $"effectiveTotal={effectiveTotal} globalRoom={FormatRoom(globalRoom)}");
             log.AppendLine($"  Sum of faction limits={cfg.GetConfiguredFactionLimitSum()} (may exceed total — priority applies)");
 
             if (totalLimit > 0 && globalRoom == 0)
             {
-                log.AppendLine("  Global total limit reached — no spawns until bots die.");
+                log.AppendLine("  Global total limit reached (incl. pending spawns) — no spawns until bots die.");
                 return result;
             }
 

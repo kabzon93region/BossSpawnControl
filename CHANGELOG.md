@@ -1,5 +1,33 @@
 # Changelog — Boss Spawn Control
 
+## 1.5.3 (2026-06-29) — **stable (population)**
+
+**Подтверждено в тестах (listen-host / Fika):** спавн по ролям, поддержание лимитов по фракциям и общий cap, сброс AI-ботов с карты работают стабильно. Боссы при сбросе **не удаляются** (ожидаемо — кнопка «Удалить всех ботов» рассчитана на обычных ботов, не на boss-волны).
+
+- **Fix спавна USEC/отступников в maintenance:** `BotSpawner.method_2(forced=false)` — игровой путь; PMC через BossSpawner, exUsec с `EPlayerSide.Savage`.
+- **PMC/rogue zones:** для USEC/BEAR/отступников — `GetPmcZones()` вместо случайной зоны.
+- **Fix ложного cap:** утечка `BotsLoading` после failed profile gen больше не блокирует maintenance.
+- **Deployment:** `(singleplayer,headless_host,host_client)` — основной сценарий listen-host на ПК игрока-хоста.
+
+### Известное ограничение (v1.5.3)
+
+- **Pit Fire Team:** опция `ProtectPitFireCompanions` (по умолчанию вкл.) может не сработать для последователей отряда — см. расследование в следующих версиях.
+
+## 1.5.2 (2026-06-29)
+
+- **Deployment:** метка `(host_client)` — мод для **listen-host** (рейд на ПК игрока-хоста), не только headless.
+- **Authority / UI:** сообщения F12 и логи явно указывают listen-host (`FikaBackendUtils.IsServer` / `EClientType.Host`) vs подключившийся client.
+
+## 1.5.1 (2026-06-29)
+
+- **Fix лимита USEC/BEAR:** `pmcUSEC`/`pmcBEAR`/`pmcBot` классифицируются как USEC/BEAR до проверки `IsBossOrFollower()` (в EFT они boss-flagged, из-за этого USEC считался 0 и лимит 4 не работал).
+- **Fix спавна PMC:** maintenance использует `BotCreationDataClass` + `TryToSpawnInZoneAndDelay(forced=false)` вместо `method_2` boss-path с `IgnoreMaxBots`.
+- **Учёт pending spawns:** `botsLoading` + очередь + `InSpawnProcess` входят в `effectiveTotal` для globalRoom.
+- **Синхронизация MaxBots:** пока maintenance активен, `BotSpawner.SetMaxBots(LimitTotal)`; восстановление при остановке.
+- **Trim excess:** удаление ботов сверх общего/фракционного лимита (vanilla/Fika queue могла поднимать счёт выше cap).
+- **Authority headless:** `IsHeadless` / `IsHeadlessGame` / plugin `com.fika.headless` для сброса и maintenance на headless host.
+- **Clear bots:** fallback `IBotGame.BotDespawn`, лог при нажатии кнопки без confirm/authority.
+
 ## 1.5.0 (2026-06-28)
 
 - **Мгновенный сброс ботов:** `RemoveFromMap()` + `Kill()` вместо только `DoLeaveExternal()` (боты уходили на точку и оставались в BotOwners).

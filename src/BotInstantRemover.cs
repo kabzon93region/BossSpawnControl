@@ -1,3 +1,4 @@
+using Comfort.Common;
 using EFT;
 using EFT.HealthSystem;
 
@@ -8,6 +9,7 @@ namespace BossSpawnControl
         None,
         RemoveFromMap,
         Kill,
+        BotDespawn,
         LeaveQueued,
         SkippedProtected,
         SkippedBtr,
@@ -27,6 +29,7 @@ namespace BossSpawnControl
         internal string Detail { get; }
         internal bool CountsAsRemovedAttempt => Method == BotRemovalMethod.RemoveFromMap
             || Method == BotRemovalMethod.Kill
+            || Method == BotRemovalMethod.BotDespawn
             || Method == BotRemovalMethod.LeaveQueued;
     }
 
@@ -72,6 +75,12 @@ namespace BossSpawnControl
                 return kill;
             }
 
+            var despawn = TryBotGameDespawn(bot);
+            if (despawn.Method != BotRemovalMethod.Failed)
+            {
+                return despawn;
+            }
+
             return TryLeaveExternal(bot);
         }
 
@@ -88,7 +97,13 @@ namespace BossSpawnControl
                 return kill;
             }
 
-            return TryRemoveFromMap(bot);
+            var removeFromMap = TryRemoveFromMap(bot);
+            if (removeFromMap.Method != BotRemovalMethod.Failed)
+            {
+                return removeFromMap;
+            }
+
+            return TryBotGameDespawn(bot);
         }
 
         private static BotRemovalAttempt TryRemoveFromMap(BotOwner bot)
@@ -133,6 +148,30 @@ namespace BossSpawnControl
             catch (System.Exception ex)
             {
                 return new BotRemovalAttempt(BotRemovalMethod.Failed, $"Kill:{ex.GetType().Name}");
+            }
+        }
+
+        private static BotRemovalAttempt TryBotGameDespawn(BotOwner bot)
+        {
+            try
+            {
+                var botGame = bot?.BotsGroup?.BotGame;
+                if (botGame == null && Singleton<IBotGame>.Instantiated)
+                {
+                    botGame = Singleton<IBotGame>.Instance;
+                }
+
+                if (botGame == null)
+                {
+                    return new BotRemovalAttempt(BotRemovalMethod.Failed, "IBotGame=null");
+                }
+
+                botGame.BotDespawn(bot);
+                return new BotRemovalAttempt(BotRemovalMethod.BotDespawn, "IBotGame.BotDespawn");
+            }
+            catch (System.Exception ex)
+            {
+                return new BotRemovalAttempt(BotRemovalMethod.Failed, $"BotDespawn:{ex.GetType().Name}");
             }
         }
 

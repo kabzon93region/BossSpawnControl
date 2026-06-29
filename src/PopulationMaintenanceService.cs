@@ -37,20 +37,30 @@ namespace BossSpawnControl
                 return;
             }
 
-            if (!BotSpawnAuthority.HasBotRemovalAuthority(out _))
+            if (!BotSpawnAuthority.HasBotRemovalAuthority(out var authorityReason))
             {
-                log.AppendLine("  ABORT: no bot authority on this machine (Fika client). Scan only skipped.");
+                log.AppendLine($"  ABORT: no bot authority on this machine ({authorityReason}). Scan/spawn skipped.");
                 log.AppendLine("[POPULATION] ===== END MAINTENANCE TICK =====");
                 plugin.Log(log.ToString(), true);
                 return;
             }
 
+            PopulationSpawnerLimitSync.Apply(plugin);
+
             var snapshot = BotPopulationCounter.Collect(plugin, "maintenance");
             cfg.SetLastSnapshot(snapshot);
 
+            var trimmed = PopulationExcessTrimmer.TrimIfOverLimits(plugin, snapshot, log);
+            if (trimmed > 0)
+            {
+                log.AppendLine($"  Trimmed {trimmed} bot(s) over configured limits.");
+                snapshot = BotPopulationCounter.Collect(plugin, "maintenance-after-trim");
+                cfg.SetLastSnapshot(snapshot);
+            }
+
             if (!cfg.AutoSpawnOnMaintenance.Value)
             {
-                log.AppendLine("  AutoSpawn disabled — scan only.");
+                log.AppendLine("  AutoSpawn disabled — scan/trim only.");
                 log.AppendLine("[POPULATION] ===== END MAINTENANCE TICK =====");
                 plugin.Log(log.ToString(), true);
                 return;
@@ -59,15 +69,6 @@ namespace BossSpawnControl
             if (!TryGetBotSpawner(out var spawner, out var spawnerError, log))
             {
                 log.AppendLine($"  ABORT spawn phase: {spawnerError}");
-                log.AppendLine("[POPULATION] ===== END MAINTENANCE TICK =====");
-                plugin.Log(log.ToString(), true);
-                return;
-            }
-
-            var zone = PopulationMaintenanceSpawner.PickSpawnZone(spawner, log);
-            if (zone == null)
-            {
-                log.AppendLine("  ABORT spawn phase: no BotZone.");
                 log.AppendLine("[POPULATION] ===== END MAINTENANCE TICK =====");
                 plugin.Log(log.ToString(), true);
                 return;
@@ -82,7 +83,7 @@ namespace BossSpawnControl
                 return;
             }
 
-            var spawnedTotal = await PopulationMaintenanceSpawner.SpawnDeficitsAsync(plugin, spawner, zone, deficits, log);
+            var spawnedTotal = await PopulationMaintenanceSpawner.SpawnDeficitsAsync(plugin, spawner, deficits, log);
 
             log.AppendLine($"  MAINTENANCE RESULT spawnedThisTick={spawnedTotal}");
             log.AppendLine("[POPULATION] ===== END MAINTENANCE TICK =====");

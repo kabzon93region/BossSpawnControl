@@ -2,8 +2,8 @@
 
 **Статус:** `ready`  
 **GitHub:** Release + zip  
-**Версия:** `1.5.0`  
-**Deployment:** `(singleplayer,headless_host)`
+**Версия:** `1.5.3`  
+**Deployment:** `(singleplayer,headless_host,host_client)`
 
 ## 1. Подготовка (уже сделано этим скриптом)
 
@@ -15,7 +15,7 @@
 cd github-repos/BossSpawnControl
 git init
 git add .
-git commit -m "Source backup Boss Spawn Control v1.5.0"
+git commit -m "Source backup Boss Spawn Control v1.5.3"
 git branch -M main
 git remote add origin https://github.com/kabzon93region/BossSpawnControl.git
 git push -u origin main
@@ -31,16 +31,16 @@ python CURSORAIMODING/tools/publish/publish_github_release.py BossSpawnControl -
 
 Прикрепить zip (только игровые файлы, без INSTALL.md):
 
-`\\Servant\data\Games\EscapeFromTarkov4\CURSORAIMODING\releases\BossSpawnControl_(singleplayer,headless_host)_v1.5.0_2026-06-29.zip`
+`\\Servant\data\Games\EscapeFromTarkov4\CURSORAIMODING\releases\BossSpawnControl_(singleplayer,headless_host,host_client)_v1.5.3_2026-06-29.zip`
 
 ```powershell
-gh release create v1.5.0 "\\Servant\data\Games\EscapeFromTarkov4\CURSORAIMODING\releases\BossSpawnControl_(singleplayer,headless_host)_v1.5.0_2026-06-29.zip" ^
-  --title "Boss Spawn Control v1.5.0" ^
+gh release create v1.5.3 "\\Servant\data\Games\EscapeFromTarkov4\CURSORAIMODING\releases\BossSpawnControl_(singleplayer,headless_host,host_client)_v1.5.3_2026-06-29.zip" ^
+  --title "Boss Spawn Control v1.5.3" ^
   --notes-file CHANGELOG.md
 ```
 
 ## Описание репозитория (suggested)
 
-Управление спавном боссов через F12: авто-spawn при старте рейда и кнопка принудительного spawn на host/headless.
+Управление спавном боссов и населением карты через F12 на хосте рейда (listen-host или headless). v1.5.3: population stable.
 
-SPT 4.0 + Fika 2.3 headless stack. Deployment: `(singleplayer,headless_host)`.
+SPT 4.0 + Fika 2.3 headless stack. Deployment: `(singleplayer,headless_host,host_client)`.
