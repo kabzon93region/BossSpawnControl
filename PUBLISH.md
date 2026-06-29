@@ -2,7 +2,7 @@
 
 **Статус:** `ready`  
 **GitHub:** Release + zip  
-**Версия:** `1.1.0`  
+**Версия:** `1.5.0`  
 **Deployment:** `(singleplayer,headless_host)`
 
 ## 1. Подготовка (уже сделано этим скриптом)
@@ -15,7 +15,7 @@
 cd github-repos/BossSpawnControl
 git init
 git add .
-git commit -m "Source backup Boss Spawn Control v1.1.0"
+git commit -m "Source backup Boss Spawn Control v1.5.0"
 git branch -M main
 git remote add origin https://github.com/kabzon93region/BossSpawnControl.git
 git push -u origin main
@@ -31,11 +31,11 @@ python CURSORAIMODING/tools/publish/publish_github_release.py BossSpawnControl -
 
 Прикрепить zip (только игровые файлы, без INSTALL.md):
 
-`\\Servant\data\Games\EscapeFromTarkov4\CURSORAIMODING\releases\BossSpawnControl_(singleplayer,headless_host)_v1.1.0_2026-06-28.zip`
+`\\Servant\data\Games\EscapeFromTarkov4\CURSORAIMODING\releases\BossSpawnControl_(singleplayer,headless_host)_v1.5.0_2026-06-29.zip`
 
 ```powershell
-gh release create v1.1.0 "\\Servant\data\Games\EscapeFromTarkov4\CURSORAIMODING\releases\BossSpawnControl_(singleplayer,headless_host)_v1.1.0_2026-06-28.zip" ^
-  --title "Boss Spawn Control v1.1.0" ^
+gh release create v1.5.0 "\\Servant\data\Games\EscapeFromTarkov4\CURSORAIMODING\releases\BossSpawnControl_(singleplayer,headless_host)_v1.5.0_2026-06-29.zip" ^
+  --title "Boss Spawn Control v1.5.0" ^
   --notes-file CHANGELOG.md
 ```
 
