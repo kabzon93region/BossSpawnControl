@@ -95,9 +95,13 @@ namespace BossSpawnControl
 
             {
 
-                ScheduleNextScan(plugin);
+                PopulationSpawnerLimitSync.Apply(plugin);
 
-                plugin.Log("[POPULATION] Maintenance mode STARTED from config.", true);
+                _timer = 5f;
+
+                _tickCount = 0;
+
+                plugin.Log("[POPULATION] Maintenance mode STARTED from config. First scan in 5s, limit synced.", true);
 
             }
 
