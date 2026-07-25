@@ -49,6 +49,13 @@ namespace BossSpawnControl
 
             var snapshot = BotPopulationCounter.Collect(plugin, "maintenance");
             cfg.SetLastSnapshot(snapshot);
+            if (!snapshot.InRaid)
+            {
+                log.AppendLine("  ABORT: GameWorld exists but MainPlayer is null (raid ending/ended).");
+                log.AppendLine("[POPULATION] ===== END MAINTENANCE TICK =====");
+                plugin.Log(log.ToString(), true);
+                return;
+            }
 
             var trimmed = PopulationExcessTrimmer.TrimIfOverLimits(plugin, snapshot, log);
             if (trimmed > 0)
@@ -61,6 +68,17 @@ namespace BossSpawnControl
             if (!cfg.AutoSpawnOnMaintenance.Value)
             {
                 log.AppendLine("  AutoSpawn disabled — scan/trim only.");
+                log.AppendLine("[POPULATION] ===== END MAINTENANCE TICK =====");
+                plugin.Log(log.ToString(), true);
+                return;
+            }
+
+            var pending = snapshot.GetPendingSpawnCount();
+            // Only skip spawn phase if bots are actively being spawned (InSpawnProcess),
+            // not when the queue is full of leaked/stale entries.
+            if (snapshot.SpawnerInSpawnProcess > 0)
+            {
+                log.AppendLine($"  WAIT: SpawnerInSpawnProcess={snapshot.SpawnerInSpawnProcess}; skip this spawn phase.");
                 log.AppendLine("[POPULATION] ===== END MAINTENANCE TICK =====");
                 plugin.Log(log.ToString(), true);
                 return;
@@ -92,7 +110,9 @@ namespace BossSpawnControl
 
         private static bool IsInRaid()
         {
-            return Singleton<GameWorld>.Instantiated && Singleton<IBotGame>.Instantiated;
+            return Singleton<GameWorld>.Instantiated
+                && Singleton<GameWorld>.Instance?.MainPlayer != null
+                && Singleton<IBotGame>.Instantiated;
         }
 
         private static bool TryGetBotSpawner(out BotSpawner spawner, out string error, StringBuilder log)

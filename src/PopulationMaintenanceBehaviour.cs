@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Diagnostics;
 
 
 
@@ -17,6 +18,16 @@ namespace BossSpawnControl
         private float _timer;
 
         private bool _tickInProgress;
+
+        private bool _lastPauseTimers;
+
+        private long _lastTickMs;
+
+        private int _tickCount;
+
+        private long _maxTickMs;
+
+        private readonly Stopwatch _tickStopwatch = new Stopwatch();
 
 
 
@@ -122,6 +133,50 @@ namespace BossSpawnControl
 
 
 
+            // PAUSE_TIMERS
+
+            if (plugin.PopulationConfig.PauseTimers.Value)
+
+            {
+
+                if (!_lastPauseTimers)
+
+                {
+
+                    _lastPauseTimers = true;
+
+                    _tickInProgress = false;
+
+                    _timer = 0f;
+
+                    BotRemovalPollRunner.Instance?.StopAll();
+
+                    plugin.Log("[PAUSE_TIMERS] BossSpawnControl - all background processes stopped.", true);
+
+                }
+
+                return;
+
+            }
+
+            else
+
+            {
+
+                if (_lastPauseTimers)
+
+                {
+
+                    _lastPauseTimers = false;
+
+                    plugin.Log("[PAUSE_TIMERS] BossSpawnControl - resuming normal operations.", true);
+
+                }
+
+            }
+
+
+
             _timer -= Time.deltaTime;
 
             if (_timer > 0f || _tickInProgress)
@@ -146,6 +201,8 @@ namespace BossSpawnControl
 
         {
 
+            _tickStopwatch.Restart();
+
             try
 
             {
@@ -154,15 +211,43 @@ namespace BossSpawnControl
 
             }
 
+            catch (System.Exception ex)
+
+            {
+
+                plugin.Log($"[POPULATION] TICK EXCEPTION: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", true);
+
+            }
+
             finally
 
             {
 
+                _tickStopwatch.Stop();
+
+                _lastTickMs = _tickStopwatch.ElapsedMilliseconds;
+
+                _tickCount++;
+
+                if (_lastTickMs > _maxTickMs) _maxTickMs = _lastTickMs;
+
                 _tickInProgress = false;
 
-                if (plugin.PopulationConfig.MaintenanceRunning.Value)
+                if (plugin.PopulationConfig.MaintenanceRunning.Value && !plugin.PopulationConfig.PauseTimers.Value)
 
                 {
+
+                    if (_lastTickMs > 500)
+
+                    {
+
+                        plugin.Log(
+
+                            $"[POPULATION] TICK PERF WARNING: tick #{_tickCount} took {_lastTickMs}ms (max={_maxTickMs}ms). " +
+
+                            $"This may contribute to frame drops.", true);
+
+                    }
 
                     ScheduleNextScan(plugin);
 
@@ -186,11 +271,20 @@ namespace BossSpawnControl
 
             _timer = Random.Range(minSec, maxSec);
 
-            plugin.Log($"[POPULATION] Next scan in {_timer:0.0}s (range {minSec}-{maxSec}).", plugin.ConfigService.DebugLogging.Value);
+            if (plugin.ConfigService.DebugLogging.Value)
+
+            {
+
+                plugin.Log(
+
+                    $"[POPULATION] Next scan in {_timer:0.0}s (range {minSec}-{maxSec}) " +
+
+                    $"| ticks={_tickCount} lastTick={_lastTickMs}ms maxTick={_maxTickMs}ms");
+
+            }
 
         }
 
     }
 
 }
-

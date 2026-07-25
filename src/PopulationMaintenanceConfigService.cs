@@ -30,6 +30,8 @@ namespace BossSpawnControl
 
         internal ConfigEntry<bool> MaintenanceRunning { get; private set; }
 
+        internal ConfigEntry<bool> PauseTimers { get; private set; }
+
         internal ConfigEntry<int> ScanIntervalMinSec { get; private set; }
 
         internal ConfigEntry<int> ScanIntervalMaxSec { get; private set; }
@@ -83,6 +85,30 @@ namespace BossSpawnControl
                         HideSettingName = true,
 
                         HideDefaultButton = true
+
+                    }));
+
+
+
+            PauseTimers = config.Bind(
+
+                "Население",
+
+                "PauseAllTimers",
+
+                false,
+
+                new ConfigDescription(
+
+                    "[ОТЛАДКА] Остановить ВСЕ фоновые процессы мода: сканирование, поддержание численности, автоспавн. Ручной спавн по кнопке продолжает работать. Используйте для диагностики зависаний.",
+
+                    null,
+
+                    new ConfigurationManagerAttributes
+
+                    {
+
+                        Order = 3100
 
                     }));
 
@@ -223,13 +249,13 @@ namespace BossSpawnControl
 
                 "ScanIntervalMinSec",
 
-                3,
+                60,
 
                 new ConfigDescription(
 
                     "Минимальный интервал сканирования (сек).",
 
-                    new AcceptableValueRange<int>(1, 60),
+                    new AcceptableValueRange<int>(10, 300),
 
                     new ConfigurationManagerAttributes { Order = 2980 }));
 
@@ -241,13 +267,13 @@ namespace BossSpawnControl
 
                 "ScanIntervalMaxSec",
 
-                8,
+                90,
 
                 new ConfigDescription(
 
                     "Максимальный интервал сканирования (сек). Случайное значение между min и max.",
 
-                    new AcceptableValueRange<int>(1, 120),
+                    new AcceptableValueRange<int>(10, 600),
 
                     new ConfigurationManagerAttributes { Order = 2970 }));
 
@@ -270,13 +296,13 @@ namespace BossSpawnControl
 
                 "MaxSpawnsPerTick",
 
-                2,
+                50,
 
                 new ConfigDescription(
 
-                    "Сколько ботов максимум доспавнить за один цикл поддержания.",
+                    "Сколько ботов максимум доспавнить за один цикл поддержания. Высокое значение = все за один тик (один большой фриз вместо многих мелких).",
 
-                    new AcceptableValueRange<int>(1, 10),
+                    new AcceptableValueRange<int>(1, 50),
 
                     new ConfigurationManagerAttributes { Order = 2950 }));
 
@@ -338,7 +364,7 @@ namespace BossSpawnControl
 
             var limitOrder = 2900;
 
-            foreach (BotFactionCategory faction in Enum.GetValues(typeof(BotFactionCategory)))
+            foreach (var faction in GetManagedFactions())
 
             {
 
@@ -394,9 +420,7 @@ namespace BossSpawnControl
 
         {
 
-            return Enum.GetValues(typeof(BotFactionCategory))
-
-                .Cast<BotFactionCategory>()
+            return GetManagedFactions()
 
                 .OrderBy(f => _factionPriorities.TryGetValue(f, out var entry) ? entry.Value : 99)
 
@@ -420,9 +444,7 @@ namespace BossSpawnControl
 
         {
 
-            return Enum.GetValues(typeof(BotFactionCategory))
-
-                .Cast<BotFactionCategory>()
+            return GetManagedFactions()
 
                 .Sum(GetFactionLimit);
 
@@ -446,14 +468,19 @@ namespace BossSpawnControl
 
                 BotFactionCategory.Rogues => 4,
 
-                BotFactionCategory.BossesAndFollowers => 5,
-
-                BotFactionCategory.Zombies => 6,
+                BotFactionCategory.Zombies => 5,
 
                 _ => 50
 
             };
 
+        }
+
+        private static IEnumerable<BotFactionCategory> GetManagedFactions()
+        {
+            return Enum.GetValues(typeof(BotFactionCategory))
+                .Cast<BotFactionCategory>()
+                .Where(f => f.IsPopulationManaged());
         }
 
     }
