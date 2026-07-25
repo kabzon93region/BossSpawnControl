@@ -1,4 +1,31 @@
+## 1.5.10 (2026-07-26)
+
+- **Spawn all bots per tick:** `MaxSpawnsPerTick` default changed from 2 to **50** — все дефицитные боты спавнятся за один тик (один большой фриз вместо множества мелких каждые3-8 секунд).
+- **Scan interval 60-90s:** `ScanIntervalMinSec` default 3→**60**, `ScanIntervalMaxSec` default 8→**90** — проверка населения раз в минуту, а не каждые3-8 секунд. Уменьшает нагрузку и микрофризы.
+
+## 1.5.8 (2026-07-11)
+
+- **Fix phantom queue deadlock v2:** `PopulationExcessTrimmer.TrimIfOverLimits` теперь сравнивает `TotalActiveBots` (реальные боты) с `LimitTotal`, а не `effectiveTotal` (включает phantom очередь). `PopulationMaintenanceDeficits.Calculate` использует `currentActive` для расчёта `globalRoom`. Это полностью устраняет deadlock когда phantom очередь блокировала и доспавн, и тримминг.
+- **Fix phantom queue deadlock v1:** `GetPendingSpawnCount()` ограничивает `SpawnerQueueWaitCount` через `Math.Max(SpawnerMaxBots, TotalActiveBots + 4)`.
+- **Fix spawn phase blocked:** проверка `pending > 0` заменена на `SpawnerInSpawnProcess > 0` — автоспавн не блокируется из-за зависших записей в очереди.
+
+## 1.5.7 (2026-07-09)
+
+- **Tick timing instrumentation:** каждый tick измеряется через Stopwatch. Если tick занял >500ms, в лог пишется TICK PERF WARNING с номером tick, временем и максимумом. Это поможет выявить, какие именно операции в maintenance вызывают фризы.
+- **Exception catch:** если RunMaintenanceTickAsync бросает исключение, оно ловится и пишется в лог вместо молчаливого проглатывания.
+- **Debug timing:** при DebugLogging включён - номер tick и время в строке следующего сканирования.
+
 # Changelog — Boss Spawn Control
+
+## 1.5.6 (2026-07-09)
+
+- **PauseAllTimers (отладка):** галочка в F12 «Население» — останавливает ВСЕ фоновые процессы мода: периодическое сканирование (`PopulationMaintenanceBehaviour`), поддержание численности, автодоспавн, Harmony-патч боссов. Ручной спавн по кнопкам продолжает работать. Используется для диагностики зависаний игры — при включённом PauseTimers мод не даёт никакой нагрузки на основной поток.
+
+## 1.5.5 (2026-06-29)
+
+- **Population factions:** в F12 лимитах оставлены только `BEAR`, `USEC`, `Отступники`, `Дикие`, `Зомби`. `Боссы+свита` больше не настраиваются и не доспавниваются режимом поддержания.
+- **Fix duplicate refill:** если предыдущий spawn ещё в `pending` / `botsLoading`, следующий maintenance tick ждёт вместо повторного доспавна той же фракции.
+- **Fix raid ending spawn:** maintenance больше не запускает доспавн, когда `GameWorld` ещё жив, но `MainPlayer` уже `null` после extract/F8.
 
 ## 1.5.4 (2026-06-29)
 
