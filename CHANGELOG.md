@@ -1,3 +1,8 @@
+## 1.5.11 (2026-07-26)
+
+- **Immediate limit sync:** `PopulationSpawnerLimitSync.Apply()` вызывается сразу при старте maintenance, а не только во время первого tick. Игровой `MaxBots` синхронизируется с `LimitTotal` немедленно.
+- **First scan in 5s:** при запуске maintenance первый скан через5 секунд вместо60-90. Боты начинают управляться почти сразу после высадки.
+
 ## 1.5.10 (2026-07-26)
 
 - **Spawn all bots per tick:** `MaxSpawnsPerTick` default changed from 2 to **50** — все дефицитные боты спавнятся за один тик (один большой фриз вместо множества мелких каждые3-8 секунд).
